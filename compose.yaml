@@ -1,0 +1,74 @@
+name: deno-todo
+
+x-app: &app
+  image: deno-todo:local
+  build:
+    context: .
+  environment:
+    DATABASE_URL: "postgresql://${POSTGRES_USER:-todo}:${POSTGRES_PASSWORD:?Kopioi .env.example tiedostoksi .env ja aseta POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-todo}"
+    HOST: "0.0.0.0"
+    PORT: "8000"
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${POSTGRES_DB:-todo}"
+      POSTGRES_USER: "${POSTGRES_USER:-todo}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Kopioi .env.example tiedostoksi .env ja aseta POSTGRES_PASSWORD}"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 3s
+      timeout: 3s
+      retries: 15
+      start_period: 5s
+
+  migrate:
+    <<: *app
+    restart: "no"
+    command:
+      - run
+      - --cached-only
+      - --frozen
+      - --allow-net
+      - --allow-env
+      - --allow-read
+      - src/db/migrate.ts
+    depends_on:
+      db:
+        condition: service_healthy
+
+  backend:
+    <<: *app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${APP_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - deno
+        - run
+        - --cached-only
+        - --frozen
+        - --allow-net=127.0.0.1:8000
+        - docker/healthcheck.ts
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    stop_grace_period: 15s
+
+volumes:
+  postgres_data:

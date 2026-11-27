@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#173e34" />
+    <meta name="description" content="Selkeä tehtävälista arjen pieniin ja suuriin asioihin." />
+    <title>Todo — yksi asia kerrallaan</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Siirry sisältöön</a>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="Todo, etusivu">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="m6 12 4 4 8-9" /></svg>
+        </span>
+        todo<span class="brand-dot" aria-hidden="true">.</span>
+      </a>
+      <div
+        class="header-note"><span class="small-dot" aria-hidden="true"></span> Yksi asia kerrallaan</div>
+      <time id="today" class="today"></time>
+    </header>
+
+    <main id="main" class="shell">
+      <section class="intro" aria-labelledby="page-title">
+        <div>
+          <p class="eyebrow">OMA TEHTÄVÄLISTA</p>
+          <h1 id="page-title">Tilaa ajatuksille.</h1>
+          <p class="intro-copy">Kirjaa ylös, keskity yhteen ja merkitse valmiiksi.</p>
+        </div>
+        <div class="intro-decoration" aria-hidden="true">
+          <span class="decoration-line"></span>
+          <svg viewBox="0 0 72 72">
+            <path d="M18 38 31 51 56 23" />
+          </svg>
+          <span class="decoration-caption">pienin askelin</span>
+        </div>
+      </section>
+
+      <div class="workspace">
+        <aside class="composer card" aria-labelledby="add-title">
+          <div class="section-kicker"><span aria-hidden="true">+</span> UUSI TEHTÄVÄ</div>
+          <h2 id="add-title">Mitä seuraavaksi?</h2>
+          <p id="composer-copy"
+            class="muted composer-copy">Pienikin asia ansaitsee oman rivinsä.</p>
+          <form id="add-form">
+            <div class="field">
+              <label for="new-title">Tehtävä <span class="required-note">(pakollinen)</span></label>
+              <input id="new-title" name="title" type="text" maxlength="200" required
+                autocomplete="off" placeholder="Esim. varaa aikaa lukemiselle"
+                aria-describedby="title-help" />
+              <p id="title-help" class="field-help">Enintään 200 merkkiä.</p>
+            </div>
+            <div class="field">
+              <label
+                for="new-description">Lisätiedot <span class="optional">valinnainen</span></label>
+              <textarea id="new-description" name="description" rows="4" maxlength="2000"
+                placeholder="Muistiinpano, pieni suunnitelma tai ensimmäinen askel…"
+                aria-describedby="description-help"></textarea>
+              <p id="description-help" class="field-help">Enintään 2 000 merkkiä.</p>
+            </div>
+            <p id="add-error" class="form-error" role="alert" hidden></p>
+            <button id="add-button" class="button button-primary button-wide" type="submit">
+              <span aria-hidden="true">+</span><span>Lisää tehtävä</span>
+            </button>
+          </form>
+          <div class="composer-footnote">
+            <svg viewBox="0 0 20 20" aria-hidden="true"><path d="m5 10 3 3 7-7" /><circle cx="10" cy="10" r="8" /></svg>
+            Tehtävät säilyvät myös seuraavaan kertaan.
+          </div>
+        </aside>
+
+        <section class="list-panel" aria-labelledby="list-title">
+          <nav id="breadcrumbs" class="breadcrumbs" aria-label="Tehtävän sijainti" hidden>
+            <ol id="breadcrumb-list"></ol>
+          </nav>
+          <div class="list-heading">
+            <div
+              class="list-title-group"><h2 id="list-title" tabindex="-1">Sinun tehtäväsi</h2><span id="task-count" class="count-badge" aria-label="Tehtävien määrä">—</span></div>
+            <button id="refresh-button" class="icon-button" type="button"
+              title="Päivitä tehtävälista" aria-label="Päivitä tehtävälista">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20 7v5h-5M4 17v-5h5" />
+                <path d="M6.1 6.1A8 8 0 0 1 19.5 10M4.5 14A8 8 0 0 0 17.9 17.9" />
+              </svg>
+            </button>
+          </div>
+          <p id="parent-description" class="parent-description" hidden></p>
+          <p id="subtask-summary" class="subtask-summary" hidden></p>
+          <div class="list-toolbar">
+            <div id="filters" class="filters" role="group" aria-label="Suodata tehtäviä">
+              <button type="button" class="filter-button active" data-filter="all"
+                aria-pressed="true">Kaikki</button>
+              <button type="button" class="filter-button" data-filter="active"
+                aria-pressed="false">Kesken</button>
+              <button type="button" class="filter-button" data-filter="completed"
+                aria-pressed="false">Valmiit</button>
+            </div>
+            <span class="sort-note">Uusimmat ensin</span>
+          </div>
+
+          <div id="list-error" class="error-banner" role="alert" hidden>
+            <span id="list-error-text"></span>
+            <button id="retry-button" class="text-button" type="button">Yritä uudelleen</button>
+          </div>
+
+          <div id="list-region" class="list-region" aria-busy="true">
+            <div id="loading-state" class="empty-state loading-state" role="status">
+              <span class="spinner" aria-hidden="true"></span><p>Haetaan tehtäviä…</p>
+            </div>
+            <ul id="todo-list" class="todo-list" aria-label="Tehtävät"></ul>
+            <div id="empty-state" class="empty-state" hidden>
+              <div class="empty-mark" aria-hidden="true">
+                <svg viewBox="0 0 48 48">
+                  <rect x="11" y="7" width="27" height="35" rx="5" />
+                  <path d="M19 7V5h11v5H19zM18 22l4 4 9-10M18 33h13" />
+                </svg>
+              </div>
+              <h3 id="empty-title">Aloitetaan yhdestä.</h3>
+              <p id="empty-copy">Lisää ensimmäinen tehtäväsi. Loput tulevat ajallaan.</p>
+            </div>
+          </div>
+
+          <div id="pagination" class="pagination" hidden>
+            <span id="page-description" class="page-description"></span>
+            <div class="page-buttons">
+              <button id="previous-button" class="button button-small"
+                type="button"><span aria-hidden="true">←</span> Edellinen</button>
+              <button id="next-button" class="button button-small"
+                type="button">Seuraava <span aria-hidden="true">→</span></button>
+            </div>
+          </div>
+          <p
+            class="list-footnote"><span aria-hidden="true">↳</span> Valmista tuli? Yksi klikkaus riittää.</p>
+        </section>
+      </div>
+    </main>
+
+    <footer
+      class="site-footer"><span>Vähemmän muistettavaa. Enemmän tilaa.</span><span class="footer-brand">todo.</span></footer>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+    <div id="list-announcement" class="sr-only" role="status" aria-live="polite"></div>
+
+    <dialog id="edit-dialog" class="dialog" aria-labelledby="edit-heading">
+      <form id="edit-form">
+        <div
+          class="dialog-heading"><h2 id="edit-heading">Muokkaa tehtävää</h2><button id="edit-close" class="icon-button" type="button" aria-label="Sulje muokkaus">×</button></div>
+        <div
+          class="field"><label for="edit-title">Tehtävä</label><input id="edit-title" name="title" type="text" required maxlength="200" autocomplete="off" /></div>
+        <div
+          class="field"><label for="edit-description">Lisätiedot <span class="optional">valinnainen</span></label><textarea id="edit-description" name="description" rows="5" maxlength="2000"></textarea></div>
+        <p id="edit-error" class="form-error" role="alert" hidden></p>
+        <div
+          class="dialog-actions"><button id="edit-cancel" class="button" type="button">Peruuta</button><button id="edit-save" class="button button-primary" type="submit">Tallenna muutokset</button></div>
+      </form>
+    </dialog>
+
+    <dialog id="delete-dialog" class="dialog dialog-compact" aria-labelledby="delete-heading"
+      aria-describedby="delete-copy">
+      <form id="delete-form">
+        <p class="eyebrow">POISTA TEHTÄVÄ</p>
+        <h2 id="delete-heading">Poistetaanko tehtävä?</h2>
+        <p id="delete-copy"
+          class="muted">Tehtävä ja kaikki sen alitehtävät poistetaan pysyvästi.</p>
+        <p id="delete-task-name" class="delete-task-name"></p>
+        <p id="delete-error" class="form-error" role="alert" hidden></p>
+        <div
+          class="dialog-actions"><button id="delete-cancel" class="button" type="button" autofocus>Peruuta</button><button id="delete-confirm" class="button button-danger" type="submit">Poista tehtävä</button></div>
+      </form>
+    </dialog>
+    <noscript><p class="noscript">Tehtävälista tarvitsee JavaScriptin. Ota JavaScript käyttöön selaimesi asetuksista.</p></noscript>
+  </body>
+</html>

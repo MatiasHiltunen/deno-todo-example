@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+node_modules/
+.deno/
+.deno_cache/
+coverage/
+*.log
+*.dump
+todo-backup*.sql
+*.zip
+.DS_Store
+.idea/
+.vscode/
